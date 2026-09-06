@@ -231,7 +231,7 @@ function SpiralScene({
       autoRotate &&
       performance.now() - lastInteractionRef.current > 300
     ) {
-      targetProgressRef.current += autoSpeed * safeDelta;
+      targetProgressRef.current -= autoSpeed * safeDelta;
     }
 
     const frameScale = Math.min(safeDelta * 60, 3);
