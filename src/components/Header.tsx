@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUIStore } from "@/store/useUIStore";
-import { motion } from "framer-motion";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 export function Header() {
   const { viewMode, setViewMode, toggleMenu, isMenuOpen, activeProjectId, setActiveProject } = useUIStore();
@@ -35,30 +35,33 @@ export function Header() {
         </div>
       )}
 
-      {/* Right Menu Button */}
-      {!isCloseMode ? (
-        <button
-          id="header-menu-button"
-          type="button"
-          aria-label="Menu button"
-          onClick={toggleMenu}
-          className="flex items-center justify-center bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-5 py-2 text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10"
-        >
-          .menu
-        </button>
-      ) : activeProjectId ? (
-        <button
-          type="button"
-          aria-label="Close project modal"
-          onClick={handleClose}
-          className="flex items-center gap-1.5 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-5 py-2 text-sm hover:bg-white shadow-sm transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10"
-        >
-          <span>close</span>
-          <span className="text-sm font-bold leading-none transform -translate-y-px">×</span>
-        </button>
-      ) : (
-        <div id="header-menu-button" className="w-[88px] h-[38px] pointer-events-none opacity-0" />
-      )}
+      {/* Right Controls (Audio Toggle & Menu Button) */}
+      <div className="flex items-center gap-2.5 pointer-events-auto">
+        <AudioPlayer />
+        {!isCloseMode ? (
+          <button
+            id="header-menu-button"
+            type="button"
+            aria-label="Menu button"
+            onClick={toggleMenu}
+            className="flex items-center justify-center bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-5 py-2 text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10"
+          >
+            .menu
+          </button>
+        ) : activeProjectId ? (
+          <button
+            type="button"
+            aria-label="Close project modal"
+            onClick={handleClose}
+            className="flex items-center gap-1.5 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-5 py-2 text-sm hover:bg-white shadow-sm transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10"
+          >
+            <span>close</span>
+            <span className="text-sm font-bold leading-none transform -translate-y-px">×</span>
+          </button>
+        ) : (
+          <div id="header-menu-button" className="w-[88px] h-[38px] pointer-events-none opacity-0" />
+        )}
+      </div>
     </header>
   );
 }

@@ -8,11 +8,14 @@ interface UIState {
   isMenuOpen: boolean;
   activeProjectId: string | null;
   hoveredProject: Project | null;
+  isAudioPlaying: boolean;
   setViewMode: (mode: ViewMode) => void;
   toggleMenu: () => void;
   closeMenu: () => void;
   setActiveProject: (id: string | null) => void;
   setHoveredProject: (project: Project | null) => void;
+  toggleAudio: () => void;
+  setAudioPlaying: (playing: boolean) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -20,9 +23,12 @@ export const useUIStore = create<UIState>((set) => ({
   isMenuOpen: false,
   activeProjectId: null,
   hoveredProject: null,
+  isAudioPlaying: false,
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleMenu: () => set((state) => ({ isMenuOpen: !state.isMenuOpen })),
   closeMenu: () => set({ isMenuOpen: false }),
   setActiveProject: (id) => set({ activeProjectId: id }),
   setHoveredProject: (project) => set({ hoveredProject: project }),
+  toggleAudio: () => set((state) => ({ isAudioPlaying: !state.isAudioPlaying })),
+  setAudioPlaying: (playing) => set({ isAudioPlaying: playing }),
 }));
