@@ -225,15 +225,16 @@ function SpiralScene({
   }, [gl, textures]);
 
   useFrame((_state, delta) => {
+    const safeDelta = Math.min(delta, 0.1);
+
     if (
       autoRotate &&
-      !reducedMotionRef.current &&
-      performance.now() - lastInteractionRef.current > 450
+      performance.now() - lastInteractionRef.current > 300
     ) {
-      targetProgressRef.current += autoSpeed * Math.min(delta, 0.05);
+      targetProgressRef.current += autoSpeed * safeDelta;
     }
 
-    const frameScale = Math.min(delta * 60, 3);
+    const frameScale = Math.min(safeDelta * 60, 3);
     const ease = reducedMotionRef.current
       ? 1
       : 1 - Math.pow(1 - smoothing, frameScale);
@@ -330,7 +331,7 @@ export function Spiral3DSlider({
   cardWidth = 255,
   cardAspectRatio = 3 / 2,
   autoRotate = true,
-  autoSpeed = 0.13,
+  autoSpeed = 0.35,
   scrollSensitivity = 0.0024,
   smoothing = 0.065,
   blurStrength = 0,
@@ -345,6 +346,9 @@ export function Spiral3DSlider({
   const lastInteraction = useRef(0);
   const visible = useRef(true);
   const reducedMotion = useRef(false);
+  const isDragging = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartX = useRef(0);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -370,7 +374,7 @@ export function Spiral3DSlider({
       const scrollY = window.scrollY;
       const delta = scrollY - previousScroll.current;
       previousScroll.current = scrollY;
-      if (visible.current && performance.now() - lastWheelTime.current > 80) {
+      if (Math.abs(delta) > 0.5 && visible.current && performance.now() - lastWheelTime.current > 80) {
         lastInteraction.current = performance.now();
         const boundedDelta = Math.sign(delta) * Math.min(Math.abs(delta), 160);
         targetProgress.current -= boundedDelta * scrollSensitivity;
@@ -393,6 +397,28 @@ export function Spiral3DSlider({
     targetProgress.current -= delta * scrollSensitivity;
   };
 
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    dragStartY.current = event.clientY;
+    dragStartX.current = event.clientX;
+    lastInteraction.current = performance.now();
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    lastInteraction.current = performance.now();
+    const deltaY = event.clientY - dragStartY.current;
+    const deltaX = event.clientX - dragStartX.current;
+    dragStartY.current = event.clientY;
+    dragStartX.current = event.clientX;
+    const dragDelta = deltaY * 1.2 - deltaX * 0.4;
+    targetProgress.current -= dragDelta * scrollSensitivity * 1.4;
+  };
+
+  const handlePointerUp = () => {
+    isDragging.current = false;
+  };
+
   if (!items.length) return null;
 
   return (
@@ -401,10 +427,14 @@ export function Spiral3DSlider({
       role="region"
       aria-label={ariaLabel}
       className={cn(
-        "relative min-h-168 w-full overflow-hidden bg-transparent transition-colors duration-300",
+        "relative min-h-168 w-full overflow-hidden bg-transparent select-none transition-colors duration-300 touch-none",
         className,
       )}
       onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <WebGLErrorBoundary
         fallback={<WebGLFallback className="absolute inset-0 h-full w-full" />}
