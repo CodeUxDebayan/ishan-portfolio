@@ -47,6 +47,14 @@ export function AboutHero() {
       { type: "text", word: "high-converting" },
       { type: "text", word: "digital" },
       { type: "text", word: "experiences." },
+      { type: "text", word: "Generating" },
+      { type: "icon", id: 3 },
+      { type: "text", word: "15M+" },
+      { type: "text", word: "Views" },
+      { type: "text", word: "through" },
+      { type: "text", word: "IG" },
+      { type: "text", word: "carousels" },
+      { type: "text", word: "only." },
     ],
     []
   );
@@ -194,6 +202,19 @@ function InteractiveIcon({ id, progress, range }: InteractiveIconProps) {
             {/* Lightning */}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+            </svg>
+          </motion.div>
+        )}
+        {id === 3 && (
+          <motion.div
+            style={{ color: iconColor }}
+            animate={{ scale: isHovered ? 1.25 : 1, rotate: isHovered ? [0, -10, 10, 0] : 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex items-center justify-center shrink-0"
+          >
+            {/* Fire / Trending Carousel Icon */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 23c4.97 0 9-4.03 9-9 0-4.07-3.04-8.08-5.32-10.32a1.003 1.003 0 0 0-1.6.36C13.2 6.55 12 8.44 12 10.5c0 .28-.22.5-.5.5-.28 0-.5-.22-.5-.5 0-2.31-1.35-4.42-2.47-5.91-.42-.56-1.3-.43-1.54.23C5.7 8.35 3 12.01 3 14c0 4.97 4.03 9 9 9z" />
             </svg>
           </motion.div>
         )}
