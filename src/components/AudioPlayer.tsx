@@ -9,11 +9,11 @@ export function AudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Initialize audio element
+    // Initialize audio element with preload none to avoid initial bandwidth competition
     const audio = new Audio("/audio/bg-music.mp3");
     audio.loop = true;
     audio.volume = 0.45;
-    audio.preload = "auto";
+    audio.preload = "none";
     audioRef.current = audio;
 
     const handleEnded = () => {

@@ -13,10 +13,11 @@ export function MainView({ projects }: { projects: Project[] }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Instant reveal on mount without artificial delay
+    const frame = requestAnimationFrame(() => {
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return (

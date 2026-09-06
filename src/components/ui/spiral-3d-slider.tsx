@@ -2,13 +2,14 @@
 
  
 
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   WebGLErrorBoundary,
   WebGLFallback,
 } from "./webgl-error-boundary";
 import { cn } from "@/lib/utils";
 import {
+  CanvasTexture,
   DoubleSide,
   LinearFilter,
   Mesh,
@@ -148,6 +149,21 @@ function imageAspect(texture: Texture) {
   return width / Math.max(height, 1);
 }
 
+function createPlaceholderTexture(): Texture {
+  if (typeof document === "undefined") return new Texture();
+  const canvas = document.createElement("canvas");
+  canvas.width = 16;
+  canvas.height = 16;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#181818";
+    ctx.fillRect(0, 0, 16, 16);
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.colorSpace = SRGBColorSpace;
+  return tex;
+}
+
 interface SpiralSceneProps {
   items: Spiral3DSlide[];
   targetProgressRef: MutableRefObject<number>;
@@ -192,37 +208,102 @@ function SpiralScene({
       ),
     [items],
   );
-  const textures = useLoader(
-    TextureLoader,
-    sceneItems.map((item) => item.src),
-  );
+
   const { gl, viewport } = useThree();
   const progress = useRef(0);
   const meshes = useRef<(Mesh | null)[]>([]);
   const materials = useRef<(ShaderMaterial | null)[]>([]);
+  const placeholder = useMemo(() => createPlaceholderTexture(), []);
 
+  // Initialize shader uniforms with instant placeholder (0 blocking time)
   const uniforms = useMemo(
     () =>
-      textures.map((texture) => ({
-        uTexture: { value: texture },
-        uImageAspect: { value: imageAspect(texture) },
+      sceneItems.map(() => ({
+        uTexture: { value: placeholder },
+        uImageAspect: { value: cardAspectRatio },
         uPlaneAspect: { value: cardAspectRatio },
         uBlur: { value: 0 },
         uDim: { value: 1.0 },
         uBend: { value: 0 },
       })),
-    [cardAspectRatio, textures],
+    [cardAspectRatio, placeholder, sceneItems],
   );
 
+  // Progressive background texture loader
   useEffect(() => {
-    textures.forEach((texture) => {
-      texture.colorSpace = SRGBColorSpace;
-      texture.minFilter = LinearFilter;
-      texture.magFilter = LinearFilter;
-      texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
-      texture.needsUpdate = true;
+    const loader = new TextureLoader();
+    let isCancelled = false;
+    const loadedMap = new Map<string, Texture>();
+
+    // Sort loading priority: visible cards closest to index 0 first
+    const indices = Array.from({ length: sceneItems.length }, (_, i) => i);
+    indices.sort((a, b) => {
+      const distA = Math.min(a, sceneItems.length - a);
+      const distB = Math.min(b, sceneItems.length - b);
+      return distA - distB;
     });
-  }, [gl, textures]);
+
+    const loadTextureForIndex = (index: number) => {
+      if (isCancelled) return;
+      const item = sceneItems[index];
+      if (!item) return;
+
+      if (loadedMap.has(item.src)) {
+        const tex = loadedMap.get(item.src)!;
+        if (uniforms[index]) {
+          uniforms[index].uTexture.value = tex;
+          uniforms[index].uImageAspect.value = imageAspect(tex);
+        }
+        return;
+      }
+
+      loader.load(
+        item.src,
+        (tex) => {
+          if (isCancelled) return;
+          tex.colorSpace = SRGBColorSpace;
+          tex.minFilter = LinearFilter;
+          tex.magFilter = LinearFilter;
+          tex.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
+          tex.needsUpdate = true;
+          loadedMap.set(item.src, tex);
+
+          if (uniforms[index]) {
+            uniforms[index].uTexture.value = tex;
+            uniforms[index].uImageAspect.value = imageAspect(tex);
+          }
+        },
+        undefined,
+        () => {
+          // On error, keep placeholder
+        }
+      );
+    };
+
+    // Load initial 10 visible cards immediately in parallel
+    const initialBatch = indices.slice(0, 10);
+    initialBatch.forEach(loadTextureForIndex);
+
+    // Stream remaining cards in small asynchronous intervals to keep frame rate silky smooth
+    const remaining = indices.slice(10);
+    let queueIndex = 0;
+    const interval = setInterval(() => {
+      if (isCancelled || queueIndex >= remaining.length) {
+        clearInterval(interval);
+        return;
+      }
+      // Load 3 at a time
+      for (let k = 0; k < 3 && queueIndex < remaining.length; k++) {
+        loadTextureForIndex(remaining[queueIndex]);
+        queueIndex++;
+      }
+    }, 60);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [gl, sceneItems, uniforms]);
 
   useFrame((_state, delta) => {
     const safeDelta = Math.min(delta, 0.1);
