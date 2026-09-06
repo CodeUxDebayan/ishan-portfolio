@@ -55,7 +55,7 @@ export function AudioPlayer() {
       type="button"
       onClick={toggleAudio}
       aria-label={isAudioPlaying ? "Mute background music" : "Play background music"}
-      className="flex items-center gap-2 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-3.5 sm:px-4 py-2 text-xs sm:text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10 group select-none"
+      className="flex items-center gap-1.5 sm:gap-2 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10 group select-none"
     >
       {/* Animated Equalizer Waveform */}
       <div className="flex items-center gap-[2.5px] h-3.5 w-3.5 justify-center">
