@@ -383,14 +383,17 @@ export function MenuOverlay() {
 
           <div className="flex gap-2">
             {[
-              { name: "Ig", href: "#" },
-              { name: "X", href: "#" },
-              { name: "Bē", href: "#" },
-              { name: "in", href: "#" },
+              { name: "Ig", href: "https://www.instagram.com/1shaaann.n?stkn=OTNyMTRhdWVxdjRo", label: "Instagram" },
+              { name: "X", href: "https://x.com/ishan575?s=11", label: "X" },
+              { name: "Bē", href: "https://www.behance.net/isshhaaannn", label: "Behance" },
+              { name: "in", href: "https://www.linkedin.com/in/ishan-mitra-279385272?utm_source=share_via&utm_content=profile&utm_medium=member_ios", label: "LinkedIn" },
             ].map((social, i) => (
               <a
                 key={i}
                 href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.label}
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#100f0c] text-white flex items-center justify-center hover:scale-110 hover:bg-[#333] transition-all font-sans text-xs sm:text-sm pointer-events-auto"
               >
                 {social.name}

@@ -46,17 +46,19 @@ export default function AboutPage() {
             <ThreeDPaper />
           </div>
 
-          {/* Clean White Text Social Links (Gray box removed) */}
+          {/* Clean White Text Social Links */}
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 mt-4">
             {[
-              { name: 'Instagram', href: "#" },
-              { name: 'X', href: "#" },
-              { name: 'Behance', href: "#" },
-              { name: 'LinkedIn', href: "#" }
+              { name: 'Instagram', href: "https://www.instagram.com/1shaaann.n?stkn=OTNyMTRhdWVxdjRo" },
+              { name: 'X', href: "https://x.com/ishan575?s=11" },
+              { name: 'Behance', href: "https://www.behance.net/isshhaaannn" },
+              { name: 'LinkedIn', href: "https://www.linkedin.com/in/ishan-mitra-279385272?utm_source=share_via&utm_content=profile&utm_medium=member_ios" }
             ].map((social, i) => (
               <a
                 key={i}
                 href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xl md:text-2xl font-bold tracking-tighter text-white hover:text-white/70 transition-colors uppercase leading-none"
               >
                 {social.name}
