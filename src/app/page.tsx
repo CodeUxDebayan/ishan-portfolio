@@ -9,7 +9,7 @@ export default async function Home() {
   const projects: Project[] = JSON.parse(dbData);
 
   return (
-    <main className="relative min-h-dvh bg-[#000000] text-[#F2EEE5] overflow-hidden">
+    <main className="relative min-h-dvh bg-transparent text-[#F2EEE5] overflow-hidden">
       <MainView projects={projects} />
     </main>
   );

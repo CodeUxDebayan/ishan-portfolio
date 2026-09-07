@@ -36,8 +36,10 @@ export function Header() {
       )}
 
       {/* Right Controls (Audio Toggle & Menu Button) */}
-      <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
-        <AudioPlayer />
+      <div className={`flex items-center gap-2 sm:gap-2.5 ${isMenuOpen ? "pointer-events-none" : "pointer-events-auto"}`}>
+        <div className="pointer-events-auto">
+          <AudioPlayer />
+        </div>
         {!isCloseMode ? (
           <button
             id="header-menu-button"

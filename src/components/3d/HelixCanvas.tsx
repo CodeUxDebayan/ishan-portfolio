@@ -26,7 +26,7 @@ export function HelixCanvas({ projects, onSelect }: { projects: Project[], onSel
   );
 
   return (
-    <div className="w-full h-dvh fixed inset-0 z-0 bg-[#000000]">
+    <div className="w-full h-dvh fixed inset-0 z-0 bg-transparent">
       <Spiral3DSlider
         items={items}
         onSelect={onSelect}

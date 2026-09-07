@@ -217,8 +217,16 @@ function PaperCard() {
     };
   }, []);
 
-  useFrame((state) => {
+  const timerRef = useRef<THREE.Timer | null>(null);
+
+  useFrame(() => {
     if (!meshRef.current) return;
+
+    if (!timerRef.current) {
+      timerRef.current = new THREE.Timer();
+    }
+    timerRef.current.update();
+    const elapsedTime = timerRef.current.getElapsed();
 
     // Smooth pointer parallax
     pointerCurrent.current.x = THREE.MathUtils.lerp(pointerCurrent.current.x, pointerTarget.current.x, 0.06);
@@ -230,13 +238,13 @@ function PaperCard() {
 
     meshRef.current.rotation.x = pointerCurrent.current.y * 0.28 + dragRotation.current.x;
     meshRef.current.rotation.y = pointerCurrent.current.x * 0.38 + dragRotation.current.y;
-    meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.7) * 0.03;
+    meshRef.current.rotation.z = Math.sin(elapsedTime * 0.7) * 0.03;
 
     // Gentle vertical floating motion
-    meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.3) * 0.08;
+    meshRef.current.position.y = Math.sin(elapsedTime * 1.3) * 0.08;
 
     if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+      materialRef.current.uniforms.uTime.value = elapsedTime;
     }
   });
 

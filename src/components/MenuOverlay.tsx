@@ -58,12 +58,13 @@ export function MenuOverlay() {
     return () => window.removeEventListener("resize", updateDimensions);
   }, [updateDimensions]);
 
-  // Layout parameters matching user requirements
-  const marginTop = 25;
-  const marginRight = 25;
-  const marginBottom = 25;
+  // Layout parameters matching user requirements and responsive padding
+  const isMobile = dimensions.width < 640;
+  const marginTop = isMobile ? 16 : 24;
+  const marginRight = isMobile ? 16 : 24;
+  const marginBottom = isMobile ? 16 : 24;
   const sidebarRadius = 18;
-  const sidebarWidth = Math.min(460, Math.max(280, dimensions.width - marginRight - 25));
+  const sidebarWidth = Math.min(460, Math.max(280, dimensions.width - marginRight - (isMobile ? 16 : 24)));
   const sidebarHeight = Math.max(200, dimensions.height - marginTop - marginBottom);
   const sidebarX = dimensions.width - marginRight - sidebarWidth;
   const sidebarY = marginTop;
@@ -86,12 +87,13 @@ export function MenuOverlay() {
         };
       }
     }
+    const m = dimensions.width < 640 ? 16 : 24;
     return {
-      x: dimensions.width - 24 - 110,
-      y: 24,
-      w: 110,
-      h: 42,
-      r: 21,
+      x: dimensions.width - m - 100,
+      y: m,
+      w: 100,
+      h: 40,
+      r: 20,
     };
   }, [dimensions.width]);
 
@@ -317,12 +319,15 @@ export function MenuOverlay() {
         />
       </svg>
 
-      {/* Close button positioned at the exact same location as the unopened .menu button */}
+      {/* Close button positioned with exact responsive alignment and top z-index */}
       <button
         type="button"
-        onClick={closeMenu}
+        onClick={(e) => {
+          e.stopPropagation();
+          closeMenu();
+        }}
         aria-label="Close menu"
-        className="fixed top-6 right-6 z-80 flex items-center justify-center gap-1.5 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-5 py-2 text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10 group"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[120] flex items-center justify-center gap-1.5 bg-[#fcfcfc] text-[#100f0c] font-medium rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-white shadow-sm hover:shadow transition-all pointer-events-auto cursor-pointer border border-[#100f0c]/10 group"
       >
         <span className="group-hover:opacity-75 transition-opacity">close</span>
         <span className="text-sm font-bold leading-none text-[#100f0c] transform -translate-y-px">×</span>
