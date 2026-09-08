@@ -23,103 +23,184 @@ export function AboutHero() {
     offset: ["start start", "end end"],
   });
 
-  const bioItems: BioItem[] = useMemo(
+  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
+  const bgOpacity = useTransform(scrollYProgress, [0, 0.8, 1], [0.85, 0.85, 0.4]);
+  const subjectY = useTransform(scrollYProgress, [0, 1], ["0%", "3%"]);
+  const subjectScale = useTransform(scrollYProgress, [0, 1], [1, 1.02]);
+
+  // Left column: "I'm Ishan, a digital designer blending [Sparkle] brand identity, performance creative,"
+  const leftItems: BioItem[] = useMemo(
     () => [
       { type: "text", word: "I'm" },
       { type: "text", word: "Ishan," },
       { type: "text", word: "a" },
-      { type: "text", word: "multidisciplinary" },
-      { type: "text", word: "visual" },
+      { type: "text", word: "digital" },
       { type: "text", word: "designer" },
+      { type: "text", word: "blending" },
       { type: "icon", id: 0 },
-      { type: "text", word: "shaping" },
-      { type: "text", word: "bold" },
       { type: "text", word: "brand" },
-      { type: "text", word: "identities," },
+      { type: "text", word: "identity," },
       { type: "text", word: "performance" },
-      { type: "text", word: "creatives," },
-      { type: "text", word: "and" },
-      { type: "icon", id: 1 },
-      { type: "text", word: "bespoke" },
-      { type: "text", word: "3D" },
-      { type: "text", word: "visual" },
-      { type: "text", word: "systems." },
-      { type: "text", word: "Partnering" },
-      { type: "text", word: "with" },
-      { type: "text", word: "ambitious" },
-      { type: "text", word: "founders" },
-      { type: "text", word: "and" },
-      { type: "icon", id: 2 },
-      { type: "text", word: "global" },
-      { type: "text", word: "brands" },
-      { type: "text", word: "to" },
-      { type: "text", word: "scale" },
-      { type: "text", word: "attention" },
-      { type: "text", word: "into" },
-      { type: "text", word: "equity" },
-      { type: "text", word: "—" },
-      { type: "text", word: "driving" },
-      { type: "icon", id: 3 },
-      { type: "text", word: "15M+" },
-      { type: "text", word: "organic" },
-      { type: "text", word: "impressions" },
-      { type: "text", word: "worldwide." },
+      { type: "text", word: "creative," },
     ],
     []
   );
 
-  // Map word-by-word highlight and icon fade-in across scroll progress
-  // Section remains pinned until all words are highlighted in pure white
-  const itemRanges = useMemo(() => {
-    const total = bioItems.length;
-    const animLimit = 0.82; // All words and icons finish turning white by 82% of scroll
+  // Right column: "and [Cube] 3D visual storytelling to build [Lightning] high-converting digital experiences."
+  const rightItems: BioItem[] = useMemo(
+    () => [
+      { type: "text", word: "and" },
+      { type: "icon", id: 1 },
+      { type: "text", word: "3D" },
+      { type: "text", word: "visual" },
+      { type: "text", word: "storytelling" },
+      { type: "text", word: "to" },
+      { type: "text", word: "build" },
+      { type: "icon", id: 2 },
+      { type: "text", word: "high-converting" },
+      { type: "text", word: "digital" },
+      { type: "text", word: "experiences." },
+    ],
+    []
+  );
 
-    return bioItems.map((_, i) => {
+  // Map word-by-word highlight across scroll progress
+  const leftItemRanges = useMemo(() => {
+    const total = leftItems.length;
+    const animLimit = 0.52;
+    return leftItems.map((_, i) => {
       const start = (i / total) * animLimit;
       const end = Math.min(animLimit, ((i + 1) / total) * animLimit);
       return [start, end] as [number, number];
     });
-  }, [bioItems]);
+  }, [leftItems]);
+
+  const rightItemRanges = useMemo(() => {
+    const total = rightItems.length;
+    const startOffset = 0.35;
+    const animLimit = 0.85;
+    const rangeSpan = animLimit - startOffset;
+    return rightItems.map((_, i) => {
+      const start = startOffset + (i / total) * rangeSpan;
+      const end = Math.min(animLimit, startOffset + ((i + 1) / total) * rangeSpan);
+      return [start, end] as [number, number];
+    });
+  }, [rightItems]);
 
   return (
     <section ref={containerRef} className="relative h-[280vh] bg-black">
-      <div className="sticky top-0 h-screen flex flex-col justify-center items-center px-6 sm:px-12 md:px-20 max-w-4xl mx-auto overflow-hidden">
-        <h1
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            textAlign: "justify",
-            textJustify: "inter-word",
-          }}
-          className="text-[25px] tracking-[0.05em] leading-[1.65] text-white text-justify w-full select-none"
+      <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden select-none">
+        {/* 1. Background Image with warm ambient flare */}
+        <motion.div
+          style={{ scale: bgScale, opacity: bgOpacity }}
+          className="absolute inset-0 pointer-events-none z-0"
         >
-          {bioItems.map((item, itemIdx) => {
-            const range = itemRanges[itemIdx] || [0, 0.82];
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/about/hero-bg.png"
+            alt=""
+            className="w-full h-full object-cover object-center opacity-75"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/60" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,#000000_88%)]" />
+        </motion.div>
 
-            if (item.type === "text") {
-              return (
-                <span key={itemIdx}>
-                  <Word
-                    word={item.word}
-                    progress={scrollYProgress}
-                    range={range}
-                  />
-                  {" "}
-                </span>
-              );
-            }
+        {/* 2. Content Layout - Flanking left and right with centered cutout */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 md:px-12 flex flex-col md:flex-row items-center justify-between h-full pt-20 pb-6 md:py-0">
+          
+          {/* Left Text Column */}
+          <div className="w-full md:w-[32%] lg:w-[31%] z-20 text-left md:text-right flex flex-col justify-center">
+            <h1
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+              }}
+              className="text-2xl sm:text-3xl md:text-3xl lg:text-[42px] xl:text-[48px] tracking-[0.03em] leading-[1.25] text-white"
+            >
+              {leftItems.map((item, itemIdx) => {
+                const range = leftItemRanges[itemIdx] || [0, 0.52];
 
-            return (
-              <span key={itemIdx}>
-                <InteractiveIcon
-                  id={item.id}
-                  progress={scrollYProgress}
-                  range={range}
-                />
-                {" "}
-              </span>
-            );
-          })}
-        </h1>
+                if (item.type === "text") {
+                  return (
+                    <span key={itemIdx}>
+                      <Word
+                        word={item.word}
+                        progress={scrollYProgress}
+                        range={range}
+                      />{" "}
+                    </span>
+                  );
+                }
+
+                return (
+                  <span key={itemIdx}>
+                    <InteractiveIcon
+                      id={item.id}
+                      progress={scrollYProgress}
+                      range={range}
+                    />{" "}
+                  </span>
+                );
+              })}
+            </h1>
+          </div>
+
+          {/* Center Foreground Subject (Ishan Cutout PNG) */}
+          <motion.div
+            style={{ y: subjectY, scale: subjectScale }}
+            className="relative z-15 flex items-end justify-center min-h-[400px] h-[48vh] sm:h-[58vh] md:h-[88vh] lg:h-[96vh] xl:h-[100vh] w-full md:w-[38%] lg:w-[40%] pointer-events-none mt-auto shrink-0"
+          >
+            {/* Ambient rim glow behind subject */}
+            <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-64 h-64 md:w-96 md:h-96 bg-orange-500/25 blur-[120px] rounded-full pointer-events-none" />
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/about/ishan-cutout.png"
+              alt="Ishan Mitra"
+              className="min-h-[400px] max-h-full w-auto object-contain object-bottom"
+              style={{
+                maskImage: "linear-gradient(to bottom, black 85%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 85%, transparent 100%)",
+              }}
+            />
+          </motion.div>
+
+          {/* Right Text Column */}
+          <div className="w-full md:w-[32%] lg:w-[31%] z-20 text-left flex flex-col justify-center">
+            <h1
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+              }}
+              className="text-2xl sm:text-3xl md:text-3xl lg:text-[42px] xl:text-[48px] tracking-[0.03em] leading-[1.25] text-white"
+            >
+              {rightItems.map((item, itemIdx) => {
+                const range = rightItemRanges[itemIdx] || [0.35, 0.85];
+
+                if (item.type === "text") {
+                  return (
+                    <span key={itemIdx}>
+                      <Word
+                        word={item.word}
+                        progress={scrollYProgress}
+                        range={range}
+                      />{" "}
+                    </span>
+                  );
+                }
+
+                return (
+                  <span key={itemIdx}>
+                    <InteractiveIcon
+                      id={item.id}
+                      progress={scrollYProgress}
+                      range={range}
+                    />{" "}
+                  </span>
+                );
+              })}
+            </h1>
+          </div>
+
+        </div>
       </div>
     </section>
   );
@@ -132,8 +213,7 @@ interface WordProps {
 }
 
 function Word({ word, progress, range }: WordProps) {
-  // Normally light gray (#777777), smoothly highlighting to pure white (#FFFFFF) on scroll
-  const opacity = useTransform(progress, range, [0.38, 1]);
+  const opacity = useTransform(progress, range, [0.35, 1]);
   const color = useTransform(progress, range, ["#777777", "#FFFFFF"]);
 
   return (
@@ -154,8 +234,7 @@ interface InteractiveIconProps {
 
 function InteractiveIcon({ id, progress, range }: InteractiveIconProps) {
   const [isHovered, setIsHovered] = useState(false);
-  // Fade in alongside surrounding words from dim light gray to pure white
-  const opacity = useTransform(progress, range, [0.2, 1]);
+  const opacity = useTransform(progress, range, [0.25, 1]);
   const scale = useTransform(progress, range, [0.85, 1]);
   const iconColor = useTransform(progress, range, ["#777777", "#FFFFFF"]);
 
@@ -211,19 +290,6 @@ function InteractiveIcon({ id, progress, range }: InteractiveIconProps) {
             {/* Lightning */}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-            </svg>
-          </motion.div>
-        )}
-        {id === 3 && (
-          <motion.div
-            style={{ color: iconColor }}
-            animate={{ scale: isHovered ? 1.25 : 1, rotate: isHovered ? [0, -10, 10, 0] : 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex items-center justify-center shrink-0"
-          >
-            {/* Fire / Trending Carousel Icon */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 23c4.97 0 9-4.03 9-9 0-4.07-3.04-8.08-5.32-10.32a1.003 1.003 0 0 0-1.6.36C13.2 6.55 12 8.44 12 10.5c0 .28-.22.5-.5.5-.28 0-.5-.22-.5-.5 0-2.31-1.35-4.42-2.47-5.91-.42-.56-1.3-.43-1.54.23C5.7 8.35 3 12.01 3 14c0 4.97 4.03 9 9 9z" />
             </svg>
           </motion.div>
         )}
