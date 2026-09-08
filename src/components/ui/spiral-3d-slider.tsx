@@ -1,14 +1,13 @@
 "use client";
 
- 
-
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   WebGLErrorBoundary,
   WebGLFallback,
 } from "./webgl-error-boundary";
 import { cn } from "@/lib/utils";
 import {
+  CanvasTexture,
   DoubleSide,
   LinearFilter,
   Mesh,
@@ -148,6 +147,26 @@ function imageAspect(texture: Texture) {
   return width / Math.max(height, 1);
 }
 
+function createPlaceholderTexture(): Texture {
+  if (typeof document !== "undefined") {
+    const canvas = document.createElement("canvas");
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#141414";
+      ctx.fillRect(0, 0, 16, 16);
+      ctx.strokeStyle = "#222222";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, 14, 14);
+    }
+    const tex = new CanvasTexture(canvas);
+    tex.colorSpace = SRGBColorSpace;
+    return tex;
+  }
+  return new Texture();
+}
+
 interface SpiralSceneProps {
   items: Spiral3DSlide[];
   targetProgressRef: MutableRefObject<number>;
@@ -162,6 +181,7 @@ interface SpiralSceneProps {
   bend: number;
   reducedMotionRef: MutableRefObject<boolean>;
   lastInteractionRef: MutableRefObject<number>;
+  isDragSuppressedRef: MutableRefObject<boolean>;
   onSelect?: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onHover?: (project: any | null) => void;
@@ -181,6 +201,7 @@ function SpiralScene({
   bend,
   reducedMotionRef,
   lastInteractionRef,
+  isDragSuppressedRef,
   onSelect,
   onHover,
 }: SpiralSceneProps) {
@@ -193,38 +214,99 @@ function SpiralScene({
     [items],
   );
 
-  const textures = useLoader(
-    TextureLoader,
-    sceneItems.map((item) => item.src),
-  );
-
   const { gl, viewport } = useThree();
   const progress = useRef(0);
   const meshes = useRef<(Mesh | null)[]>([]);
   const materials = useRef<(ShaderMaterial | null)[]>([]);
 
+  // Default placeholder texture
+  const placeholderTex = useMemo(() => createPlaceholderTexture(), []);
+
   const uniforms = useMemo(
     () =>
-      textures.map((texture) => ({
-        uTexture: { value: texture },
-        uImageAspect: { value: imageAspect(texture) },
+      sceneItems.map(() => ({
+        uTexture: { value: placeholderTex },
+        uImageAspect: { value: cardAspectRatio },
         uPlaneAspect: { value: cardAspectRatio },
         uBlur: { value: 0 },
         uDim: { value: 1.0 },
         uBend: { value: 0 },
       })),
-    [cardAspectRatio, textures],
+    [cardAspectRatio, placeholderTex, sceneItems],
   );
 
+  // Progressive / Sequential Texture Streaming
   useEffect(() => {
-    textures.forEach((texture) => {
-      texture.colorSpace = SRGBColorSpace;
-      texture.minFilter = LinearFilter;
-      texture.magFilter = LinearFilter;
-      texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
-      texture.needsUpdate = true;
-    });
-  }, [gl, textures]);
+    let isMounted = true;
+    const loader = new TextureLoader();
+
+    // Prioritize front-facing items first (0, 1, 2, 15, 14), then the rest sequentially
+    const total = sceneItems.length;
+    const priorityIndices = [0, 1, 2, total - 1, total - 2, 3, 4];
+    const otherIndices = Array.from({ length: total }, (_, i) => i).filter(
+      (i) => !priorityIndices.includes(i),
+    );
+    const queue = [...priorityIndices.filter((i) => i < total), ...otherIndices];
+
+    let activeLoads = 0;
+    const maxConcurrent = 2; // Stream 2 images concurrently so UI never drops frames
+
+    const loadNext = () => {
+      if (!isMounted || queue.length === 0 || activeLoads >= maxConcurrent) return;
+
+      const index = queue.shift();
+      if (index === undefined) return;
+
+      activeLoads++;
+      const item = sceneItems[index];
+
+      loader.load(
+        item.src,
+        (loadedTex) => {
+          if (!isMounted) {
+            loadedTex.dispose();
+            return;
+          }
+          loadedTex.colorSpace = SRGBColorSpace;
+          loadedTex.minFilter = LinearFilter;
+          loadedTex.magFilter = LinearFilter;
+          loadedTex.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
+          loadedTex.needsUpdate = true;
+
+          const mat = materials.current[index];
+          if (mat) {
+            mat.uniforms.uTexture.value = loadedTex;
+            mat.uniforms.uImageAspect.value = imageAspect(loadedTex);
+          } else if (uniforms[index]) {
+            uniforms[index].uTexture.value = loadedTex;
+            uniforms[index].uImageAspect.value = imageAspect(loadedTex);
+          }
+
+          activeLoads--;
+          // Continue sequential loading
+          loadNext();
+        },
+        undefined,
+        () => {
+          activeLoads--;
+          loadNext();
+        },
+      );
+
+      // Trigger next slot if concurrent capacity allows
+      if (activeLoads < maxConcurrent && queue.length > 0) {
+        loadNext();
+      }
+    };
+
+    // Kick off initial loading queue
+    loadNext();
+    loadNext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [gl, sceneItems, uniforms]);
 
   useFrame((_state, delta) => {
     const safeDelta = Math.min(delta, 0.1);
@@ -267,7 +349,6 @@ function SpiralScene({
       mesh.scale.set(planeWidth * scale, planeHeight * scale, 1);
 
       // Middle 3 cards (|position| <= 1.25) are unblurred & 100% bright.
-      // Distant cards outside the 3 middle cards get blur and vignette dimming.
       const distFromMiddle3 = Math.max(0, Math.abs(position) - 1.25);
       const effectiveBlur = Math.pow(distFromMiddle3, 1.5) * (blurStrength > 0 ? blurStrength * 1.5 : 2.5);
       const effectiveDim = Math.max(0.18, 1.0 - Math.pow(distFromMiddle3, 1.2) * 0.32);
@@ -290,6 +371,8 @@ function SpiralScene({
           frustumCulled={false}
           onClick={(e) => {
             e.stopPropagation();
+            // Suppress accidental click if user was dragging/spinning
+            if (isDragSuppressedRef.current) return;
             if (item.id) onSelect?.(item.id);
           }}
           onPointerOver={(e) => {
@@ -320,9 +403,6 @@ function SpiralScene({
   );
 }
 
-import { Html } from "@react-three/drei";
-import { OrigamiLoop } from "./origami-loop";
-
 export function Spiral3DSlider({
   items,
   onSelect,
@@ -351,6 +431,24 @@ export function Spiral3DSlider({
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
   const dragStartX = useRef(0);
+  const totalDragDist = useRef(0);
+  const isDragSuppressed = useRef(false);
+
+  // Keyboard navigation (Arrow keys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        targetProgress.current += 1;
+        lastInteraction.current = performance.now();
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        targetProgress.current -= 1;
+        lastInteraction.current = performance.now();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -403,6 +501,8 @@ export function Spiral3DSlider({
     isDragging.current = true;
     dragStartY.current = event.clientY;
     dragStartX.current = event.clientX;
+    totalDragDist.current = 0;
+    isDragSuppressed.current = false;
     lastInteraction.current = performance.now();
   };
 
@@ -411,6 +511,10 @@ export function Spiral3DSlider({
     lastInteraction.current = performance.now();
     const deltaY = event.clientY - dragStartY.current;
     const deltaX = event.clientX - dragStartX.current;
+    totalDragDist.current += Math.hypot(deltaX, deltaY);
+    if (totalDragDist.current > 7) {
+      isDragSuppressed.current = true;
+    }
     dragStartY.current = event.clientY;
     dragStartX.current = event.clientX;
     const dragDelta = deltaY * 1.2 - deltaX * 0.4;
@@ -419,6 +523,10 @@ export function Spiral3DSlider({
 
   const handlePointerUp = () => {
     isDragging.current = false;
+    // Release drag suppression on a short timeout so synchronous onClick gets suppressed
+    setTimeout(() => {
+      isDragSuppressed.current = false;
+    }, 120);
   };
 
   if (!items.length) return null;
@@ -451,7 +559,7 @@ export function Spiral3DSlider({
               powerPreference: "high-performance",
             }}
           >
-            <Suspense fallback={<Html center><OrigamiLoop /></Html>}>
+            <Suspense fallback={null}>
               <SpiralScene
                 items={items}
                 targetProgressRef={targetProgress}
@@ -466,6 +574,7 @@ export function Spiral3DSlider({
                 bend={bend}
                 reducedMotionRef={reducedMotion}
                 lastInteractionRef={lastInteraction}
+                isDragSuppressedRef={isDragSuppressed}
                 onSelect={onSelect}
                 onHover={onHover}
               />

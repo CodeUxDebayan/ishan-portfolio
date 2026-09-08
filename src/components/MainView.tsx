@@ -9,7 +9,7 @@ import { OrigamiLoop } from "@/components/ui/origami-loop";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function MainView({ projects }: { projects: Project[] }) {
-  const { viewMode } = useUIStore();
+  const { viewMode, activeProjectId, setActiveProject } = useUIStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +19,53 @@ export function MainView({ projects }: { projects: Project[] }) {
     });
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  // Deep linking: read initial ?project=... on load
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const projId = searchParams.get("project");
+    if (projId && projects.some((p) => p.id === projId)) {
+      setActiveProject(projId);
+    }
+  }, [projects, setActiveProject]);
+
+  // Sync activeProjectId with browser URL and history
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const currentParam = searchParams.get("project");
+
+    if (activeProjectId) {
+      if (currentParam !== activeProjectId) {
+        searchParams.set("project", activeProjectId);
+        const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+        window.history.pushState({ project: activeProjectId }, "", newUrl);
+      }
+    } else if (currentParam) {
+      searchParams.delete("project");
+      const newUrl = searchParams.toString()
+        ? `${window.location.pathname}?${searchParams.toString()}`
+        : window.location.pathname;
+      window.history.pushState({}, "", newUrl);
+    }
+  }, [activeProjectId]);
+
+  // Listen to popstate (back button / forward button / mobile swipe-back)
+  useEffect(() => {
+    const handlePopState = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const projId = searchParams.get("project");
+      if (projId && projects.some((p) => p.id === projId)) {
+        setActiveProject(projId);
+      } else {
+        setActiveProject(null);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [projects, setActiveProject]);
 
   return (
     <>

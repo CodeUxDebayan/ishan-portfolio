@@ -13,6 +13,7 @@ interface ProjectModalProps {
 
 export function ProjectModal({ project, allProjects = [] }: ProjectModalProps) {
   const { setActiveProject } = useUIStore();
+  const scrollWrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Find next project
@@ -29,6 +30,24 @@ export function ProjectModal({ project, allProjects = [] }: ProjectModalProps) {
 
   const yOffset = useTransform(scrollYProgress, [0, 1], ["0%", "-30%"]);
 
+  // Reset scroll to top when project changes
+  useEffect(() => {
+    if (scrollWrapperRef.current) {
+      scrollWrapperRef.current.scrollTop = 0;
+    }
+  }, [project.id]);
+
+  // Keyboard accessibility: Escape key closes modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveProject(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setActiveProject]);
+
   useEffect(() => {
     // Disable body scroll when modal is open, let this container handle scrolling
     document.body.style.overflow = "hidden";
@@ -39,6 +58,7 @@ export function ProjectModal({ project, allProjects = [] }: ProjectModalProps) {
 
   return (
     <motion.div 
+      ref={scrollWrapperRef}
       initial={{ y: "100%" }}
       animate={{ y: "0%" }}
       exit={{ y: "100%" }}
